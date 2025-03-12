@@ -82,12 +82,14 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\ProgressBarAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\Expandable.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\EnumFlagsTest.cs" />
+    <Compile Include="Assets\Scripts\DictionaryTest\InventorySystem.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\InputAxisAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ExpandableTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\EnableIfTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes_SpecialCase\ShowNonSerializedFieldAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\_NaughtyComponent.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\_TestScriptableObjectB.cs" />
+    <Compile Include="Assets\Scripts\DungeonGeneration2.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\ResizableTextAreaAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\SortingLayerTest.cs" />
     <Compile Include="Assets\Scripts\DungeonGeneration.cs" />
@@ -117,9 +119,11 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\InputAxisTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\MinMaxSliderTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ProgressBarTest.cs" />
+    <Compile Include="Assets\Scripts\Graph\Graph.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\CurveRangeTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\DrawerAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\ValidatorAttributes\RequiredAttribute.cs" />
+    <Compile Include="Assets\Scripts\Graph\GraphTester.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\CurveRangeAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\LayerAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\INaughtyAttribute.cs" />

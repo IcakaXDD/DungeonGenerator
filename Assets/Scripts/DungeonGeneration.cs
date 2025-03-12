@@ -1,95 +1,85 @@
-using NaughtyAttributes;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Collections;
 
-public class DungeonGeneration : MonoBehaviour
+public class DungeonGenerator : MonoBehaviour
 {
-    public int intersectRooms = 5;
-    public bool splitHorizontally;
-    public int numberOfRooms = 5;
-    public float height;
-    public int minWidth;
-    public int minHeight;
-    public bool firstTime = true;
-    public RectInt bigRoom;
+    public int SIZE = 100;
+    public int numberOfRooms = 50;
+    public int wMin = 5;
+    public int hMin = 5;
+    public int intersectLength = 1;
+
+    private RectInt bigRoom;
     public List<RectInt> rooms;
 
-    void Start()
+    private void Start()
     {
-        bigRoom = new RectInt(0, 0, 200, 200);
-        rooms.Add(bigRoom);
-        AlgorithmsUtils.DebugRectInt(bigRoom, Color.green, 5, true, height);
-        StartCoroutine(GenerateRooms(bigRoom));
+        GenerateDungeon();
     }
 
-    IEnumerator GenerateRooms(RectInt bigRoom)
+    private void GenerateDungeon()
     {
-        yield return new WaitForSeconds(1.5f);
-        while (numberOfRooms > rooms.Count)
+        bigRoom = new RectInt(0, 0, SIZE, SIZE);
+        rooms = new List<RectInt>();
+
+        // Use a queue to control room splitting
+        List<RectInt> roomList = new List<RectInt> { bigRoom };
+
+        while (roomList.Count < numberOfRooms)
         {
-            int randomRoom = Random.Range(0, rooms.Count);
-            yield return new WaitForSeconds(0.1f);
+            // Get the largest room to split
+            roomList.Sort((a, b) => b.width * b.height - a.width * a.height);
+            RectInt currentRoom = roomList[0];
+            roomList.RemoveAt(0);
 
-            RectInt roomToSplit = rooms[randomRoom];
-
-            if (roomToSplit.width < minWidth || roomToSplit.height < minHeight)
-            {
-                continue; 
-            }
-
-            int isItHorizontal = Random.Range(0, 2);
-            if (isItHorizontal == 0)
-            {
-                splitHorizontally = true;
-            }
-            else
-            {
-                splitHorizontally = false;
-            }
+            bool splitHorizontally = Random.value > 0.5f;
 
             if (splitHorizontally)
             {
-                SplitRoomsHorizontally(randomRoom);
+                SplitRoomHorizontally(currentRoom, roomList);
             }
             else
             {
-                SplitVertically(randomRoom);
+                SplitRoomVertically(currentRoom, roomList);
             }
         }
+
+        rooms = roomList;
+        StartCoroutine(DrawDungeon(rooms));
     }
 
-    private (RectInt, RectInt) SplitRoomsHorizontally(int indexRoom)
+    private void SplitRoomHorizontally(RectInt room, List<RectInt> roomList)
     {
-        RectInt roomToDivide = rooms[indexRoom];
-        int halfHeight = roomToDivide.height / 2;
+        if (room.height < hMin * 2) return;
 
-        RectInt roomA = new RectInt(roomToDivide.x, roomToDivide.y, roomToDivide.width, halfHeight);
-        RectInt roomB = new RectInt(roomToDivide.x, roomToDivide.y + halfHeight, roomToDivide.width, halfHeight);
+        int splitPoint = Random.Range(hMin, room.height - hMin);
+        RectInt roomA = new RectInt(room.x, room.y, room.width, splitPoint + intersectLength);
+        RectInt roomB = new RectInt(room.x, room.y + splitPoint, room.width, room.height - splitPoint);
 
-        DebugDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(roomA, Color.red, 100, true, height));
-        DebugDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(roomB, Color.blue, 100, true, height));
-
-        rooms[indexRoom] = roomA;
-        rooms.Add(roomB);
-
-        return (roomA, roomB);
+        roomList.Add(roomA);
+        roomList.Add(roomB);
     }
 
-    private (RectInt, RectInt) SplitVertically(int roomIndex)
+    private void SplitRoomVertically(RectInt room, List<RectInt> roomList)
     {
-        RectInt roomToDivide = rooms[roomIndex];
-        int halfWidth = roomToDivide.width / 2;
+        if (room.width < wMin * 2) return;
 
-        RectInt roomA = new RectInt(roomToDivide.x, roomToDivide.y, halfWidth, roomToDivide.height);
-        RectInt roomB = new RectInt(roomToDivide.x + halfWidth, roomToDivide.y, halfWidth, roomToDivide.height);
+        int splitPoint = Random.Range(wMin, room.width - wMin);
+        RectInt roomA = new RectInt(room.x, room.y, splitPoint + intersectLength, room.height);
+        RectInt roomB = new RectInt(room.x + splitPoint, room.y, room.width - splitPoint, room.height);
 
-        DebugDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(roomA, Color.magenta, 1, false, height));
-        DebugDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(roomB, Color.blue, 1, true, height));
+        roomList.Add(roomA);
+        roomList.Add(roomB);
+    }
 
-        rooms[roomIndex] = roomA;
-        rooms.Add(roomB);
-
-        return (roomA, roomB);
+    private IEnumerator DrawDungeon(List<RectInt> rooms)
+    {
+        foreach (var room in rooms)
+        {
+            yield return new WaitForSeconds(0.05f);
+            DebugDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(room, Color.green, 100f));
+        }
     }
 }
+

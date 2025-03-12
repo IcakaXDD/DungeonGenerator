@@ -11,6 +11,14 @@ public class AlgorithmsUtils
                a.yMax > b.yMin;
     }
     
+    public static bool Contains(RectInt small, RectInt big)
+    {
+        return small.xMax < big.xMax &&
+            small.yMax < big.yMax &&
+            small.xMin > big.xMin &&
+            small.yMin > big.yMin;
+    }
+
     public static RectInt Intersect(RectInt a, RectInt b)
     {
         int x = Mathf.Max(a.xMin, b.xMin);
