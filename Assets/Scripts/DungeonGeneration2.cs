@@ -74,12 +74,14 @@ public class DungeonGenerator2 : MonoBehaviour
                     if(intersection.width>intersection.height)
                     {
                         RectInt door = new RectInt(intersection.x+intersection.width/2,intersection.y,2,2);
+                        yield return new WaitForSeconds(secondsForTest);
                         AlgorithmsUtils.DebugRectInt(door, Color.cyan,100f);
                         doors.Add(door);
                     }
                     else
                     {
                         RectInt door = new RectInt(intersection.x, intersection.y+ intersection.height/ 2, 2, 2);
+                        yield return new WaitForSeconds(secondsForTest);
                         AlgorithmsUtils.DebugRectInt(door, Color.cyan, 100f);
                         doors.Add(door);
                     }
