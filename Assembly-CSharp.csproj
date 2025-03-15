@@ -99,7 +99,6 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\MinMaxSliderAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\HideIfAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes_SpecialCase\ButtonAttribute.cs" />
-    <Compile Include="Assets\Scripts\HelloDebugDrawing.cs" />
     <Compile Include="Assets\Scripts\DebugDrawingBatcher.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\LabelTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\ShowAssetPreviewAttribute.cs" />
@@ -143,6 +142,7 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\ReadOnlyAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\ValidatorAttributes\ValidateInputAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ReorderableListTest.cs" />
+    <Compile Include="Assets\Scripts\Graph.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\ValidatorAttributes\MaxValueAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\IGroupAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\HorizontalLineTest.cs" />

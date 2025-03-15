@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Graph<T>
+public class Graph1<T>
 {
     private Dictionary<T, List<T>> adjacencyList; 
-    public Graph() 
+    public Graph1() 
     {
         adjacencyList = new Dictionary<T, List<T>>(); 
     }
