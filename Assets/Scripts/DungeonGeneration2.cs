@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections;
+using Unity.VisualScripting;
+using UnityEditor.Overlays;
 
 public class DungeonGenerator2 : MonoBehaviour
 {
@@ -9,9 +11,10 @@ public class DungeonGenerator2 : MonoBehaviour
     public int numberOfRooms = 50;
     public int wMin = 5;
     public int hMin = 5;
-    public bool fastTest = false;
-
     public int intersectLength = 1;
+    public bool fastTest = false;
+    public string seed;
+    
     private int distanceFromEdge;
     private RectInt bigRoom;
     private bool canISeeTheRooms = false;
@@ -20,21 +23,26 @@ public class DungeonGenerator2 : MonoBehaviour
     private bool isCoroutineFinished = false;
     private int activeSplittingCoroutines = 0;
 
-
+    [SerializeField] Graph<RectInt> graph;
     public List<RectInt> doors;
     public List<RectInt> rooms;
 
 
     public DebugDrawingBatcher rectIntDrawingBathcer;
 
-
-
     private void Start()
     {
+        int Size;
         doors = new List<RectInt>();
+        graph = new Graph<RectInt>();
         if (!fastTest)
         {
-            secondsForTest = 0.5f;
+            secondsForTest = 0.2f;
+        }
+        if(seed != null)
+        {
+            Size = seed[0] * 100+ seed[1] * 10 + seed[2];
+
         }
         GenerateDungeon();
     }
@@ -55,6 +63,46 @@ public class DungeonGenerator2 : MonoBehaviour
         StartCoroutine(SplitingFinished());
     }
 
+    private IEnumerator GraphCreator()
+    {
+        List<RectInt> visited = new List<RectInt>();
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            graph.AddNode(rooms[i]);
+            visited.Add(rooms[i]);
+            Vector3 roomPosition = new Vector3(rooms[i].center.x, 0, rooms[i].center.y);
+            DebugExtension.DebugWireSphere(roomPosition,Color.red, 3, 100);
+            yield return new WaitForSeconds(secondsForTest);
+
+            for (int j = 0; j < doors.Count; j++)
+            {
+                if (AlgorithmsUtils.Intersects(rooms[i], doors[j]))
+                {
+                    Vector3 doorPosition = new Vector3(doors[j].center.x, 0, doors[j].center.y);
+
+                    if (!visited.Contains(rooms[i]))
+                    {
+                        graph.AddNode(doors[j]);
+                        visited.Add(doors[j]);
+                        DebugExtension.DebugWireSphere(doorPosition, Color.red, 3, 100);
+                        yield return new WaitForSeconds(secondsForTest);
+                    }
+
+                    graph.AddEdge(rooms[i], doors[j]);
+                    Debug.DrawLine(roomPosition,doorPosition,Color.red,100f);
+                    yield return new WaitForSeconds(secondsForTest);
+                }
+            }
+        }
+    }
+    
+
+    private IEnumerator SplitingFinished()
+    {
+        yield return new WaitUntil(() => activeSplittingCoroutines == 0);
+        StartCoroutine(DoorChecker());
+    }
+
     private IEnumerator DoorChecker()
     {
         Debug.Log("Entered DoorChecker()");
@@ -69,18 +117,21 @@ public class DungeonGenerator2 : MonoBehaviour
                 if (AlgorithmsUtils.Intersects(roomA, roomB))
                 {
                     RectInt intersection = AlgorithmsUtils.Intersect(roomA, roomB);
+                    
 
                     if (intersection.width < wMin && intersection.height < hMin) continue; 
+
+
                     if(intersection.width>intersection.height)
                     {
-                        RectInt door = new RectInt(intersection.x+intersection.width/2,intersection.y,2,2);
+                        RectInt door = new RectInt(intersection.x+ Random.Range(intersectLength,intersection.width-intersectLength),intersection.y,intersectLength,intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
                         AlgorithmsUtils.DebugRectInt(door, Color.cyan,100f);
                         doors.Add(door);
                     }
                     else
                     {
-                        RectInt door = new RectInt(intersection.x, intersection.y+ intersection.height/ 2, 2, 2);
+                        RectInt door = new RectInt(intersection.x, intersection.y+ Random.Range(intersectLength,intersection.height-intersectLength), intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
                         AlgorithmsUtils.DebugRectInt(door, Color.cyan, 100f);
                         doors.Add(door);
@@ -88,15 +139,13 @@ public class DungeonGenerator2 : MonoBehaviour
                 }   
             }
         }
+        yield return StartCoroutine(GraphCreator());
         yield break;
-    }   
-    
-    private IEnumerator SplitingFinished()
-    {
-        yield return new WaitUntil(()=> activeSplittingCoroutines == 0);
-        StartCoroutine(DoorChecker());
     }
 
+    
+
+    #region Spliting Methods
     public IEnumerator HorizontalSplit(List<RectInt> rooms, RectInt room, int counter = 0, bool trySplitingTheOpposite = true)
     {
 
@@ -260,7 +309,9 @@ public class DungeonGenerator2 : MonoBehaviour
             return splitPoint;
         }
     }
+    #endregion
 
+    #region DrawingMethods
     private IEnumerator DrawRooms(RectInt roomA, RectInt roomB)
     {
         yield return new WaitForSeconds(5f);
@@ -278,6 +329,9 @@ public class DungeonGenerator2 : MonoBehaviour
         }
 
     }
+    #endregion
+
+    #region Room Checks
     private void RoomsCounterCheck(List<RectInt> rooms, RectInt roomA, RectInt roomB)
     {
         if (rooms.Count + 2 <= numberOfRooms)
@@ -299,5 +353,5 @@ public class DungeonGenerator2 : MonoBehaviour
     {
         return room.x < 0 || room.y < 0 || (room.x + room.width) > SIZE || (room.y + room.height) > SIZE;
     }
-
+    #endregion
 }

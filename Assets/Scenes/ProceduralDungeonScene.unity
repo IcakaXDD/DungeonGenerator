@@ -425,8 +425,9 @@ MonoBehaviour:
   numberOfRooms: 50
   wMin: 18
   hMin: 18
-  fastTest: 1
   intersectLength: 2
+  fastTest: 1
+  seed: 
   doors: []
   rooms: []
   rectIntDrawingBathcer: {fileID: 978372889}
