@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEditor.Overlays;
+using UnityEditor;
 
 public class DungeonGenerator2 : MonoBehaviour
 {
@@ -13,14 +14,14 @@ public class DungeonGenerator2 : MonoBehaviour
     public int hMin = 5;
     public int intersectLength = 1;
     public bool fastTest = false;
+
+    [Header("Seed Settings")]
+    public bool UseSeed = false;
     public string seed;
-    
+
     private int distanceFromEdge;
     private RectInt bigRoom;
-    private bool canISeeTheRooms = false;
-    private bool doorCheckerStarted = false;
     private float secondsForTest = 0;
-    private bool isCoroutineFinished = false;
     private int activeSplittingCoroutines = 0;
 
     [SerializeField] Graph<RectInt> graph;
@@ -28,31 +29,72 @@ public class DungeonGenerator2 : MonoBehaviour
     public List<RectInt> rooms;
 
 
-    public DebugDrawingBatcher rectIntDrawingBathcer;
+    public DebugDrawingBatcher rectIntDrawingBatcher;
+    private System.Random seededRandom;
 
     private void Start()
     {
-        int Size;
+        rectIntDrawingBatcher = DebugDrawingBatcher.GetInstance();
         doors = new List<RectInt>();
         graph = new Graph<RectInt>();
+
+        InitializeRandom();
         if (!fastTest)
         {
             secondsForTest = 0.2f;
         }
-        if(seed != null)
+        if (seed != null && seed.Length == 11 && UseSeed)
         {
-            Size = seed[0] * 100+ seed[1] * 10 + seed[2];
-
-        }
+            SIZE = int.Parse(seed.Substring(0, 3));
+            numberOfRooms = int.Parse(seed.Substring(3, 2));
+            wMin = int.Parse(seed.Substring(5, 2));
+            hMin = int.Parse(seed.Substring(7, 2));
+            intersectLength = int.Parse(seed.Substring(9, 1));
+            
+            
+        }   
+        ValidateParameters();
         GenerateDungeon();
     }
+
+    private void InitializeRandom()
+    {
+        if (UseSeed)
+        {
+            int numericSeed;
+
+            if (string.IsNullOrEmpty(seed))
+            {
+                numericSeed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+            }
+            else
+            {
+                numericSeed = seed.GetHashCode();
+            }
+
+            seededRandom = new System.Random(numericSeed);
+        }
+        else
+        {
+            seededRandom = new System.Random();
+        }
+    }
+    private void ValidateParameters()
+    {
+        SIZE = Mathf.Clamp(SIZE, 50, 500);
+        numberOfRooms = Mathf.Clamp(numberOfRooms, 10, 300);
+        wMin = Mathf.Clamp(wMin, 3, 40);
+        hMin = Mathf.Clamp(hMin, 3, 40);
+        intersectLength = Mathf.Clamp(intersectLength, 1, 3);
+    }
+
     private void GenerateDungeon()
     {
         bigRoom = new RectInt(0, 0, SIZE, SIZE);
         distanceFromEdge = hMin + 2 * intersectLength;
         rooms = new List<RectInt>();
         AlgorithmsUtils.DebugRectInt(bigRoom, Color.red, 100f);
-        if (Random.Range(0, 2) == 1)
+        if (seededRandom.Next(0,2)==1)
         {
             StartCoroutine(HorizontalSplit(rooms, bigRoom, 0));
         }
@@ -100,6 +142,14 @@ public class DungeonGenerator2 : MonoBehaviour
     private IEnumerator SplitingFinished()
     {
         yield return new WaitUntil(() => activeSplittingCoroutines == 0);
+
+        Debug.Log("Splitting finished");
+        foreach (var room in rooms)
+        {
+            rectIntDrawingBatcher.BatchCall(() => { AlgorithmsUtils.DebugRectInt(room, Color.magenta); });
+            
+        }
+
         StartCoroutine(DoorChecker());
     }
 
@@ -116,22 +166,20 @@ public class DungeonGenerator2 : MonoBehaviour
 
                 if (AlgorithmsUtils.Intersects(roomA, roomB))
                 {
-                    RectInt intersection = AlgorithmsUtils.Intersect(roomA, roomB);
-                    
+                    RectInt intersection = AlgorithmsUtils.Intersect(roomA, roomB);  
 
                     if (intersection.width < wMin && intersection.height < hMin) continue; 
 
-
                     if(intersection.width>intersection.height)
                     {
-                        RectInt door = new RectInt(intersection.x+ Random.Range(intersectLength,intersection.width-intersectLength),intersection.y,intersectLength,intersectLength);
+                        RectInt door = new RectInt(intersection.x+ seededRandom.Next(intersectLength+5,intersection.width-(5+intersectLength)),intersection.y,intersectLength,intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
                         AlgorithmsUtils.DebugRectInt(door, Color.cyan,100f);
                         doors.Add(door);
                     }
                     else
                     {
-                        RectInt door = new RectInt(intersection.x, intersection.y+ Random.Range(intersectLength,intersection.height-intersectLength), intersectLength, intersectLength);
+                        RectInt door = new RectInt(intersection.x, intersection.y+ seededRandom.Next(intersectLength+5,intersection.height-(5+intersectLength)), intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
                         AlgorithmsUtils.DebugRectInt(door, Color.cyan, 100f);
                         doors.Add(door);
@@ -139,6 +187,7 @@ public class DungeonGenerator2 : MonoBehaviour
                 }   
             }
         }
+       
         yield return StartCoroutine(GraphCreator());
         yield break;
     }
@@ -151,21 +200,6 @@ public class DungeonGenerator2 : MonoBehaviour
 
         if (counter >= numberOfRooms || NotBigEnough(room) || OutOfBounds(room))
         {
-            bool isCounterFailed = counter >= numberOfRooms;
-            bool isBigEnough = NotBigEnough(room);
-            bool isOutOfBounds = OutOfBounds(room);
-            if (isCounterFailed)
-            {
-                Debug.LogWarning("Counter failed " + room);
-            }
-            if (isBigEnough)
-            {
-                Debug.LogWarning("Room is not big enough" + room);
-            }
-            if (isOutOfBounds)
-            {
-                Debug.LogWarning("Room is out of bounds" + room);
-            }
             yield break;
         }
         if (rooms.Count >= numberOfRooms)
@@ -189,7 +223,7 @@ public class DungeonGenerator2 : MonoBehaviour
         rooms.Add(roomA);
         rooms.Add(roomB);
 
-        AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, 100f);        
+        AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, 100f);
         AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, 100f);
         yield return new WaitForSeconds(secondsForTest);
         yield return StartCoroutine(VerticalSplit(rooms, roomA, counter + 1));
@@ -201,29 +235,85 @@ public class DungeonGenerator2 : MonoBehaviour
     {
         int splitPoint = -1;
         int c = 0;
+
+        int minSplit = distanceFromEdge;
+        int maxSplit = room.height - distanceFromEdge;
+
         do
         {
             c++;
-            splitPoint = Random.Range(c, c + room.height);
-            if (splitPoint > room.height - distanceFromEdge)
+            if (minSplit > maxSplit)
             {
                 continue;
             }
-            else if (splitPoint < distanceFromEdge)
+            splitPoint = seededRandom.Next(minSplit, maxSplit);
+
+            // Ensure valid split point
+            if (splitPoint + intersectLength <= room.height - intersectLength &&
+                splitPoint - intersectLength >= intersectLength)
             {
-                continue;
+                break;
             }
-            break;
         }
-        while (c < room.height);
-        if (c == room.height)
-        {
-            return -1;
-        }
-        else
-        {
-            return splitPoint;
-        }
+        while (c < 100); // Max 100 attempts
+
+        return splitPoint;
+        //int splitPoint = -1;
+        //int c = 0;
+        //if (UseSeed)
+        //{
+        //    do
+        //    {
+        //        if (c == 20)
+        //        {
+        //            return -1;
+        //        }
+        //        predictRandomnes +=10;
+        //        if (predictRandomnes > room.height - distanceFromEdge)
+        //        {
+        //            predictRandomnes = 5;
+        //            c++;
+        //            continue;
+        //        }
+        //        else if (predictRandomnes < distanceFromEdge)
+        //        {
+        //            predictRandomnes = distanceFromEdge;
+        //            c++;
+        //            continue;
+        //        }
+        //        break;
+
+        //    }while (true);
+        //    return predictRandomnes;
+        //}
+        //else
+        //{
+        //    do
+        //    {
+        //        c++;
+        //        splitPoint = Random.Range(c, c + room.height);
+        //        if (splitPoint > room.height - distanceFromEdge)
+        //        {
+        //            continue;
+        //        }
+        //        else if (splitPoint < distanceFromEdge)
+        //        {
+        //            continue;
+        //        }
+        //        break;
+        //    }
+        //    while (c < room.height);
+        //}
+
+
+        //if (c == room.height)
+        //{
+        //    return -1;
+        //}
+        //else
+        //{
+        //    return splitPoint;
+        //}
     }
 
     public IEnumerator VerticalSplit(List<RectInt> rooms, RectInt room, int counter, bool trySplitingTheOpposite = true)
@@ -236,15 +326,15 @@ public class DungeonGenerator2 : MonoBehaviour
             bool isOutOfBounds = OutOfBounds(room);
             if (isCounterFailed)
             {
-                Debug.LogWarning("Counter failed " + room);
+                //Debug.LogWarning("Counter failed " + room);
             }
             if (isBigEnough)
             {
-                Debug.LogWarning("Room is not big enough" + room);
+                //Debug.LogWarning("Room is not big enough" + room);
             }
             if (isOutOfBounds)
             {
-                Debug.LogWarning("Room is out of bounds" + room);
+                //Debug.LogWarning("Room is out of bounds" + room);
             }
             yield break;
         }
@@ -260,7 +350,7 @@ public class DungeonGenerator2 : MonoBehaviour
             {
                 yield return StartCoroutine(HorizontalSplit(rooms, room, counter,false));
             }
-            Debug.LogWarning("Invalid split point detected.");
+            //Debug.LogWarning("Invalid split point detected.");
             yield break;
         }
         activeSplittingCoroutines++;
@@ -271,7 +361,7 @@ public class DungeonGenerator2 : MonoBehaviour
         rooms.Add(roomA);
         rooms.Add(roomB);
 
-        
+
         AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, 100f);
         AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, 100f);
         yield return new WaitForSeconds(secondsForTest);
@@ -285,29 +375,79 @@ public class DungeonGenerator2 : MonoBehaviour
         int splitPoint = -1;
         int c = 0;
 
+        int minSplit = distanceFromEdge;
+        int maxSplit = room.width - distanceFromEdge;
+
         do
         {
             c++;
-            splitPoint = Random.Range(c, c + room.width);
-            if (splitPoint > room.width - distanceFromEdge)
+            if (minSplit > maxSplit)
             {
                 continue;
             }
-            else if (splitPoint < distanceFromEdge)
+            splitPoint = seededRandom.Next(minSplit, maxSplit);
+
+            if (splitPoint + intersectLength <= room.width - intersectLength &&
+                splitPoint - intersectLength >= intersectLength)
             {
-                continue;
+                break;
             }
-            break;
         }
-        while (c < room.width);
-        if (c == room.width)
-        {
-            return -1;
-        }
-        else
-        {
-            return splitPoint;
-        }
+        while (c < 100);
+
+        return splitPoint;
+        //int splitPoint = -1;
+        //int c = 0;
+        //if (UseSeed)
+        //{
+        //    do
+        //    {
+        //        if (c == 20)
+        //        {
+        //            return -1;
+        //        }
+        //        predictRandomnes += 10;
+        //        if (predictRandomnes > room.height - distanceFromEdge)
+        //        {
+        //            predictRandomnes = 5;
+        //            c++;
+        //            continue;
+        //        }
+        //        else if (predictRandomnes < distanceFromEdge)
+        //        {
+        //            predictRandomnes = distanceFromEdge;
+        //            c++;
+        //            continue;
+        //        }
+
+        //        break;
+
+        //    } while (true);
+        //    return predictRandomnes;
+        //}
+        //do
+        //{
+        //    c++;
+        //    splitPoint = Random.Range(c, c + room.width);
+        //    if (splitPoint > room.width - distanceFromEdge)
+        //    {
+        //        continue;
+        //    }
+        //    else if (splitPoint < distanceFromEdge)
+        //    {
+        //        continue;
+        //    }
+        //    break;
+        //}
+        //while (c < room.width);
+        //if (c == room.width)
+        //{
+        //    return -1;
+        //}
+        //else
+        //{
+        //    return splitPoint;
+        //}
     }
     #endregion
 
@@ -325,7 +465,7 @@ public class DungeonGenerator2 : MonoBehaviour
         foreach (var room in rooms)
         {
             yield return new WaitForSeconds(0.1f);
-            rectIntDrawingBathcer.BatchCall(() =>AlgorithmsUtils.DebugRectInt(room, Color.green, 100f));
+            rectIntDrawingBatcher.BatchCall(() =>AlgorithmsUtils.DebugRectInt(room, Color.green, 100f));
         }
 
     }
@@ -355,3 +495,17 @@ public class DungeonGenerator2 : MonoBehaviour
     }
     #endregion
 }
+//[CustomEditor(typeof(DungeonGenerator2))]
+//public class DungeonGeneration2Editor : Editor 
+//{
+//    public override void OnInspectorGUI()
+//    {
+//        var script = (DungeonGenerator2)target;
+//        script.UseSeed = EditorGUILayout.Toggle("Use seed",script.UseSeed);
+//        if (!script.UseSeed)
+//        {
+//            return;
+//        }
+//        script.seed = EditorGUILayout.TextArea("Seed: ", script.seed);
+//    }
+//}
