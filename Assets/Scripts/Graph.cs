@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Graph<T>
@@ -83,6 +84,55 @@ public class Graph<T>
             Debug.Log($"{node.Key}: {string.Join(", ", node.Value)}");
         }
     }
+    public Graph<T> Clone()
+    {
+        var newGraph = new Graph<T>();
+        foreach (var node in adjacencyList.Keys)
+        {
+            newGraph.AddNode(node);
+            foreach (var neighbor in GetNeighbors(node))
+            {
+                newGraph.AddEdge(node, neighbor);
+            }
+        }
+        return newGraph;
+    }
+
+    public bool IsFullyConnected()
+    { 
+        HashSet<T> visited = new HashSet<T>();
+        Queue<T> queue = new Queue<T>();
+        T startNode = default;
+
+        foreach (var node in adjacencyList.Keys)
+        {
+            if (adjacencyList.ContainsKey(node))
+            {
+                startNode = node;
+                break;
+            }
+        }
+
+        queue.Enqueue(startNode);
+        visited.Add(startNode);
+
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+            foreach (var neighbor in adjacencyList[current])
+            {
+                //Skip if the neighbor of this node was removed
+                if (!adjacencyList.ContainsKey(neighbor)) continue;
+
+                if (!visited.Contains(neighbor))
+                {
+                    visited.Add(neighbor);
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+        return visited.Count == adjacencyList.Count;
+    }
 
     public void BFS(T startNode)
     {
@@ -90,7 +140,7 @@ public class Graph<T>
         Queue<T> queue = new Queue<T>();
         queue.Enqueue(startNode);
         visited.Add(startNode);
-        Debug.Log(startNode + " is discovered");
+        //Debug.Log(startNode + " is discovered");
         while (queue.Count > 0)
         {
             startNode = queue.Dequeue();
@@ -106,7 +156,6 @@ public class Graph<T>
             }
         }
     }
-
     // Depth-First Search (DFS)
     public void DFS(T startNode)
     {

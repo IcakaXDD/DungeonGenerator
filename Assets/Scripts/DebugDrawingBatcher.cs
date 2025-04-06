@@ -33,6 +33,14 @@ public class DebugDrawingBatcher : MonoBehaviour
         batchedCalls.Add(action);
     }
 
+    public void ClearAllBatches()
+    {
+        foreach (var batcher in instances.Values)
+        {
+            batcher.batchedCalls.Clear();
+        }
+    }
+
     public void ClearCalls()
     {
         batchedCalls.Clear();

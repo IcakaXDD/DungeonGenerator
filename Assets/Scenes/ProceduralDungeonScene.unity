@@ -423,13 +423,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SIZE: 200
   numberOfRooms: 50
-  wMin: 18
-  hMin: 18
+  wMin: 15
+  hMin: 15
   intersectLength: 2
-  predictRandomnes: 3
-  fastTest: 0
+  deletePercent: 70
+  fastTest: 1
   UseSeed: 1
-  seed: 2005018182
+  seed: maikaTiEMnogoHubava
   doors: []
   rooms: []
   rectIntDrawingBatcher: {fileID: 0}
