@@ -16,9 +16,11 @@ public class DungeonGenerator2 : MonoBehaviour
     public int hMin = 5;
     public int intersectLength = 1;
 
-    public int deletePercent;
+    public int deletePercent = 0;
     
     public bool fastTest = false;
+
+    public bool makeItAsATree = true;
 
     [Header("Seed Settings")]
     public bool UseSeed = false;
@@ -102,25 +104,20 @@ public class DungeonGenerator2 : MonoBehaviour
         AlgorithmsUtils.DebugRectInt(bigRoom, Color.red, 100f);
         if (seededRandom.Next(0,2)==1)
         {
-            StartCoroutine(HorizontalSplit(rooms, bigRoom, 0));
+            StartCoroutine(HorizontalSplit(rooms, bigRoom));
         }
         else
         {
-            StartCoroutine(VerticalSplit(rooms, bigRoom, 0));
+            StartCoroutine(VerticalSplit(rooms, bigRoom));
         }
         StartCoroutine(SplitingFinished());
     }
     
 
     #region Spliting Methods
-    public IEnumerator HorizontalSplit(List<RectInt> rooms, RectInt room, int counter = 0, bool trySplitingTheOpposite = true)
+    public IEnumerator HorizontalSplit(List<RectInt> rooms, RectInt room, bool trySplitingTheOpposite = true)
     {
-
-        if (counter >= numberOfRooms || NotBigEnough(room) || OutOfBounds(room))
-        {
-            yield break;
-        }
-        if (rooms.Count >= numberOfRooms)
+        if (NotBigEnough(room) || OutOfBounds(room)/*|| rooms.Count >= numberOfRooms*/)
         {
             yield break;
         }
@@ -129,7 +126,7 @@ public class DungeonGenerator2 : MonoBehaviour
         {
             if (trySplitingTheOpposite)
             {
-                yield return StartCoroutine(VerticalSplit(rooms, room, counter,false));
+                yield return StartCoroutine(VerticalSplit(rooms, room, false));
             }
             yield break;
         }
@@ -144,8 +141,8 @@ public class DungeonGenerator2 : MonoBehaviour
         rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, 1f));
         rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, 1f));
         yield return new WaitForSeconds(secondsForTest);
-        yield return StartCoroutine(VerticalSplit(rooms, roomA, counter + 1));
-        yield return StartCoroutine(VerticalSplit(rooms, roomB, counter + 1));
+        yield return StartCoroutine(VerticalSplit(rooms, roomA));
+        yield return StartCoroutine(VerticalSplit(rooms, roomB));
         activeSplittingCoroutines--;
     }
 
@@ -153,7 +150,6 @@ public class DungeonGenerator2 : MonoBehaviour
     {
         int splitPoint = -1;
         int c = 0;
-
         int minSplit = distanceFromEdge;
         int maxSplit = room.height - distanceFromEdge;
 
@@ -178,16 +174,10 @@ public class DungeonGenerator2 : MonoBehaviour
         return splitPoint;
     }
 
-    public IEnumerator VerticalSplit(List<RectInt> rooms, RectInt room, int counter, bool trySplitingTheOpposite = true)
+    public IEnumerator VerticalSplit(List<RectInt> rooms, RectInt room, bool trySplitingTheOpposite = true)
     {
-
-        if (counter == numberOfRooms || NotBigEnough(room) || OutOfBounds(room))
+        if (NotBigEnough(room) || OutOfBounds(room)/*|| rooms.Count >= numberOfRooms*/)
         {
-            yield break;
-        }
-        if (rooms.Count >= numberOfRooms)
-        {
-            Debug.Log("Room limit reached");
             yield break;
         }
         int splitPoint = CalculateVerticalSplitPoint(room);
@@ -195,7 +185,7 @@ public class DungeonGenerator2 : MonoBehaviour
         {
             if (trySplitingTheOpposite)
             {
-                yield return StartCoroutine(HorizontalSplit(rooms, room, counter,false));
+                yield return StartCoroutine(HorizontalSplit(rooms, room,false));
             }
             //Debug.LogWarning("Invalid split point detected.");
             yield break;
@@ -212,9 +202,9 @@ public class DungeonGenerator2 : MonoBehaviour
         rectIntDrawingBatcher.BatchCall(()=> AlgorithmsUtils.DebugRectInt(roomA, Color.yellow, 1f));
         rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(roomB, Color.yellow, 1f));
         yield return new WaitForSeconds(secondsForTest);
-        yield return StartCoroutine(HorizontalSplit(rooms, roomA, counter + 1));
+        yield return StartCoroutine(HorizontalSplit(rooms, roomA));
 
-        yield return StartCoroutine(HorizontalSplit(rooms, roomB, counter + 1));
+        yield return StartCoroutine(HorizontalSplit(rooms, roomB));
         activeSplittingCoroutines--;
     }
 
@@ -257,8 +247,18 @@ public class DungeonGenerator2 : MonoBehaviour
         
     }
 
+    #region Room Checks
+    private bool NotBigEnough(RectInt room)
+    {
+        return room.width <= distanceFromEdge && room.height <= distanceFromEdge;
+    }
 
-    
+    private bool OutOfBounds(RectInt room)
+    {
+        return room.x < 0 || room.y < 0 || (room.x + room.width) > SIZE || (room.y + room.height) > SIZE;
+    }
+    #endregion
+
 
     #endregion
 
@@ -278,12 +278,11 @@ public class DungeonGenerator2 : MonoBehaviour
                     RectInt intersection = AlgorithmsUtils.Intersect(roomA, roomB);
 
                     if (intersection.width < wMin && intersection.height < hMin) continue;
-
                     if (intersection.width > intersection.height)
                     {
                         RectInt door = new RectInt(intersection.x + seededRandom.Next(intersectLength + 5, intersection.width - (5 + intersectLength)), intersection.y, intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
-                        rectIntDrawingBatcher.BatchCall(()=> AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
+                        rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
                         doors.Add(door);
                     }
                     else
@@ -291,6 +290,8 @@ public class DungeonGenerator2 : MonoBehaviour
                         RectInt door = new RectInt(intersection.x, intersection.y + seededRandom.Next(intersectLength + 5, intersection.height - (5 + intersectLength)), intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
                         rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
+
+
                         doors.Add(door);
                     }
                 }
@@ -299,15 +300,20 @@ public class DungeonGenerator2 : MonoBehaviour
 
         
         yield return StartCoroutine(DeleteSmallRooms());
-        yield return StartCoroutine(DrawDungeon());
+        //opravi chakaneto
+        
+        int check = DrawDungeon();
+        yield return new WaitUntil(() => check == 1);
         yield return StartCoroutine(GraphCreator(true));
+        Debug.Log("Dungeon Finished");
         yield break;
     }
 
+    
 
     private IEnumerator DeleteSmallRooms()
     {
-        Debug.Log("Starts deleting "+deletePercent+" of the rooms");
+        Debug.Log("Starts deleting "+deletePercent+"% of the rooms");
 
         List<RectInt> orderRooms = rooms.OrderBy(room => room.width * room.height).ToList();
         int numberOfRoomsToDelete = (int)(orderRooms.Count * deletePercent / 100);
@@ -416,6 +422,11 @@ public class DungeonGenerator2 : MonoBehaviour
     private void GraphCreatorWithoutDoors()
     {
         originalGraph.Clear();
+        // First add ALL rooms as nodes
+        foreach (var room in rooms)
+        {
+            originalGraph.AddNode(room);
+        }
         List<RectInt> visited = new List<RectInt>();
         for (int i = 0; i < rooms.Count; i++)
         {
@@ -424,8 +435,13 @@ public class DungeonGenerator2 : MonoBehaviour
             {
                 if (AlgorithmsUtils.Intersects(rooms[i], rooms[j]))
                 {
-                    CheckContainsList(visited, j);
-                    originalGraph.AddEdge(rooms[i], rooms[j]);
+                    RectInt intersection = AlgorithmsUtils.Intersect(rooms[i],rooms[j]);
+                    if (intersection.width >= intersectLength + 2 || intersection.height >= intersectLength + 2)
+                    {
+                        CheckContainsList(visited, j);
+                        originalGraph.AddEdge(rooms[i], rooms[j]);
+                    }
+                    
                 }
             }
         }
@@ -433,34 +449,76 @@ public class DungeonGenerator2 : MonoBehaviour
 
     #endregion
 
-    private IEnumerator DrawDungeon()
+    private int DrawDungeon()
     {
         Debug.Log("Redrawing the dungeon");
         rectIntDrawingBatcher.ClearAllBatches();
         foreach (var room in rooms)
         {
-            yield return new WaitForSeconds(secondsForTest);
+            //yield return new WaitForSeconds(secondsForTest);
             rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(room, Color.green, 100f));
         }
-        foreach (var door in doors)
+        if (makeItAsATree)
         {
-            yield return new WaitForSeconds(secondsForTest);
-            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
+            MakeTheGraphAsTree();
         }
 
+        //vikame da napravi graph bez vrati
+        //graph bfs na tozi samo bez vratite
+
+        //if node1 i node2 sa susedi
+        //nachertai vrata
+        foreach (var door in doors)
+        {
+            //yield return new WaitForSeconds(secondsForTest);
+            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
+        }
+        return 1;
+
     }
 
-    #region Room Checks
-    private bool NotBigEnough(RectInt room)
+    private void MakeTheGraphAsTree()
     {
-        return room.width <= distanceFromEdge || room.height <= distanceFromEdge;
-    }
+        doors.Clear();
+        GraphCreatorWithoutDoors();
+        Graph<RectInt> tempGraph = originalGraph.BFSTree();
 
-    private bool OutOfBounds(RectInt room)
-    {
-        return room.x < 0 || room.y < 0 || (room.x + room.width) > SIZE || (room.y + room.height) > SIZE;
+        HashSet<(RectInt, RectInt)> connectedPairs = new HashSet<(RectInt, RectInt)>();
+
+        foreach (var room in tempGraph.GetNodes())
+        {
+            foreach (var neighbor in tempGraph.GetNeighbors(room))
+            {
+                if (connectedPairs.Contains((room, neighbor))) continue;
+                if (connectedPairs.Contains((neighbor, room))) continue;
+                RectInt intersection = AlgorithmsUtils.Intersect(room, neighbor);
+                if (intersection.width <= 0 || intersection.height <= 0) continue;
+
+                if (intersection.width > intersection.height)
+                {
+                    int minX = intersection.x + intersectLength+1;
+                    int maxX = intersection.x + intersection.width - (intersectLength+1);
+                    if (maxX > minX)
+                    {
+                        int doorX = seededRandom.Next(minX, maxX);
+                        doors.Add(new RectInt(doorX, intersection.y, intersectLength, intersectLength));
+                        connectedPairs.Add((room, neighbor));
+                    }
+                }
+                else
+                {
+                    int minY = intersection.y + intersectLength+1;
+                    int maxY = intersection.y + intersection.height - (1+intersectLength);
+                    if (maxY > minY)
+                    {
+                        int doorY = seededRandom.Next(minY, maxY);
+                        doors.Add(new RectInt(intersection.x, doorY, intersectLength, intersectLength));
+                        connectedPairs.Add((room, neighbor));
+                    }
+                }
+            }
+        }
     }
-    #endregion
 }
 //[CustomEditor(typeof(DungeonGenerator2))]
 //public class DungeonGeneration2Editor : Editor 

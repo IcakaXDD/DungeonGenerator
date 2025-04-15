@@ -422,14 +422,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SIZE: 200
-  numberOfRooms: 50
+  numberOfRooms: 99999
   wMin: 15
   hMin: 15
   intersectLength: 2
-  deletePercent: 70
+  deletePercent: 25
   fastTest: 1
+  makeItAsATree: 0
   UseSeed: 1
-  seed: maikaTiEMnogoHubava
+  seed: dungeon123
   doors: []
   rooms: []
   rectIntDrawingBatcher: {fileID: 0}

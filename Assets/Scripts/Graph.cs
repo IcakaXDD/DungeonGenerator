@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class Graph<T>
 {
     private Dictionary<T, List<T>> adjacencyList;
+
+
 
     public Graph()
     {
@@ -178,4 +181,45 @@ public class Graph<T>
         }
 
     }
+
+    public Graph<T> BFSTree()
+    {
+        Graph<T> tree =new Graph<T>();
+        HashSet<T> visited = new HashSet<T>();
+        Queue<T> queue = new Queue<T>();
+
+        T startNode = default;
+
+        foreach (var node in adjacencyList.Keys)
+        {
+            if (adjacencyList.ContainsKey(node))
+            {
+                startNode = node;
+                break;
+            }
+        }
+
+        queue.Enqueue(startNode);
+        visited.Add(startNode);
+        tree.AddNode(startNode);
+
+        while (queue.Count > 0)
+        {
+            T current = queue.Dequeue();
+            foreach (T neighbor in adjacencyList[current])
+            {
+                if (!visited.Contains(neighbor))
+                {
+                    visited.Add(neighbor);
+                   
+                    queue.Enqueue(neighbor);
+                    tree.AddNode(neighbor);
+                    tree.AddEdge(current,neighbor);
+                }
+            }
+        }
+        return tree;
+    }
+
+
 }
