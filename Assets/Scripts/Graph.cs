@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
+using UnityEditor.Rendering;
 using UnityEngine;
 
-public class Graph<T>
+public class Graph<T> 
 {
     private Dictionary<T, List<T>> adjacencyList;
 
@@ -221,5 +222,56 @@ public class Graph<T>
         return tree;
     }
 
+    public void BFSTree2()
+    {
+        if (adjacencyList.Count == 0) return;
+
+        var visited = new HashSet<T>();
+        var parent = new Dictionary<T, T>();
+        var queue = new Queue<T>();
+        var edgesToKeep = new HashSet<(T, T)>(); // Stores allowed edges (parent ? child)
+
+        // Start from the first node
+        T startNode = adjacencyList.Keys.First();
+        queue.Enqueue(startNode);
+        visited.Add(startNode);
+
+        while (queue.Count > 0)
+        {
+            T current = queue.Dequeue();
+            foreach (T neighbor in adjacencyList[current])
+            {
+                if (!visited.Contains(neighbor))
+                {
+                    visited.Add(neighbor);
+                    parent[neighbor] = current;
+                    edgesToKeep.Add((current, neighbor)); // Mark as tree edge
+                    edgesToKeep.Add((neighbor, current)); // Undirected graph
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        // Collect all edges to remove (those not in edgesToKeep)
+        var edgesToRemove = new List<(T, T)>();
+        foreach (var node in adjacencyList.Keys)
+        {
+            foreach (var neighbor in adjacencyList[node])
+            {
+                if (!edgesToKeep.Contains((node, neighbor)))
+                {
+                    edgesToRemove.Add((node, neighbor));
+                }
+            }
+        }
+
+        // Remove non-tree edges
+        foreach (var (a, b) in edgesToRemove)
+        {
+            RemoveEdge(a, b);
+        }
+    }
 
 }
+
+

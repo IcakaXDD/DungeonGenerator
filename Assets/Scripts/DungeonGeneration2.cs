@@ -7,6 +7,7 @@ using UnityEditor.Overlays;
 using UnityEditor;
 using System;
 using NaughtyAttributes.Test;
+using Unity.AI.Navigation;
 
 public class DungeonGenerator2 : MonoBehaviour
 {
@@ -22,6 +23,10 @@ public class DungeonGenerator2 : MonoBehaviour
 
     public bool makeItAsATree = true;
 
+    public bool placeAssets = false;
+
+    public NavMeshSurface navMesh;
+
     [Header("Seed Settings")]
     public bool UseSeed = false;
     public string seed;
@@ -35,33 +40,42 @@ public class DungeonGenerator2 : MonoBehaviour
     [SerializeField] Graph<RectInt> backUpGraph;
     public List<RectInt> doors;
     public List<RectInt> rooms;
+    
 
 
     public DebugDrawingBatcher rectIntDrawingBatcher;
     private System.Random seededRandom;
 
+    public static DungeonGenerator2 Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
     private void Start()
     {
         rectIntDrawingBatcher = DebugDrawingBatcher.GetInstance();
+        intersectLength = 2;
         doors = new List<RectInt>();
         originalGraph = new Graph<RectInt>();
 
         InitializeRandom();
         if (!fastTest)
         {
-            secondsForTest = 0.2f;
+            secondsForTest = 0.01f;
         }
-        if (seed != null && seed.Length == 11 && UseSeed)
+        if (UseSeed)
         {
-            SIZE = int.Parse(seed.Substring(0, 3));
-            numberOfRooms = int.Parse(seed.Substring(3, 2));
-            wMin = int.Parse(seed.Substring(5, 2));
-            hMin = int.Parse(seed.Substring(7, 2));
-            intersectLength = int.Parse(seed.Substring(9, 1));
-            
-            
-        }   
-        ValidateParameters();
+            ValidateParameters();
+        }  
         GenerateDungeon();
     }
     #region Seed and Random set
@@ -89,11 +103,14 @@ public class DungeonGenerator2 : MonoBehaviour
     }
     private void ValidateParameters()
     {
-        SIZE = Mathf.Clamp(SIZE, 50, 800);
+        SIZE = seededRandom.Next(50,200);
+        SIZE = Mathf.Clamp(SIZE, 50, 200);
+        numberOfRooms = seededRandom.Next(10, 300);
         numberOfRooms = Mathf.Clamp(numberOfRooms, 10, 300);
+        wMin = seededRandom.Next(5, 30);
         wMin = Mathf.Clamp(wMin, 3, 40);
+        hMin = seededRandom.Next(5, 30);
         hMin = Mathf.Clamp(hMin, 3, 40);
-        intersectLength = Mathf.Clamp(intersectLength, 1, 3);
     }
     #endregion
     private void GenerateDungeon()
@@ -280,14 +297,18 @@ public class DungeonGenerator2 : MonoBehaviour
                     if (intersection.width < wMin && intersection.height < hMin) continue;
                     if (intersection.width > intersection.height)
                     {
-                        RectInt door = new RectInt(intersection.x + seededRandom.Next(intersectLength + 5, intersection.width - (5 + intersectLength)), intersection.y, intersectLength, intersectLength);
+                        if(intersectLength+2>intersection.width-(2+intersectLength)) continue;
+
+                        RectInt door = new RectInt(intersection.x + seededRandom.Next(intersectLength + 2, intersection.width - (2 + intersectLength)), intersection.y, intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
                         rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
                         doors.Add(door);
                     }
                     else
                     {
-                        RectInt door = new RectInt(intersection.x, intersection.y + seededRandom.Next(intersectLength + 5, intersection.height - (5 + intersectLength)), intersectLength, intersectLength);
+                        if (intersectLength + 2 > intersection.height - (2 + intersectLength)) continue;
+
+                        RectInt door = new RectInt(intersection.x, intersection.y + seededRandom.Next(intersectLength+2, intersection.height - (2 + intersectLength)), intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
                         rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
 
@@ -300,16 +321,31 @@ public class DungeonGenerator2 : MonoBehaviour
 
         
         yield return StartCoroutine(DeleteSmallRooms());
-        //opravi chakaneto
+        
         
         int check = DrawDungeon();
         yield return new WaitUntil(() => check == 1);
         yield return StartCoroutine(GraphCreator(true));
         Debug.Log("Dungeon Finished");
+        if (placeAssets)
+        {
+            Debug.Log("Generating Tile Map");
+            TileMapGenerator.Instance.GenerateTileMap();
+            Debug.Log("Placing wall assets");
+            TileMapGenerator.Instance.GenerateTileMap();
+            Debug.Log("Floor fill");
+            FloorFillSpawner.Instance.FloorFill();
+            yield return new WaitUntil(() => FloorFillSpawner.Instance.floorPlaced == true);
+            BakeNavMesh();
+        }
+        
         yield break;
     }
 
-    
+    private void BakeNavMesh()
+    {
+        navMesh.BuildNavMesh();
+    }
 
     private IEnumerator DeleteSmallRooms()
     {
@@ -460,6 +496,7 @@ public class DungeonGenerator2 : MonoBehaviour
         }
         if (makeItAsATree)
         {
+            //originalGraph.BFSTree2();
             MakeTheGraphAsTree();
         }
 
@@ -477,17 +514,18 @@ public class DungeonGenerator2 : MonoBehaviour
 
     }
 
+
     private void MakeTheGraphAsTree()
     {
         doors.Clear();
         GraphCreatorWithoutDoors();
-        Graph<RectInt> tempGraph = originalGraph.BFSTree();
+        originalGraph.BFSTree2();
 
         HashSet<(RectInt, RectInt)> connectedPairs = new HashSet<(RectInt, RectInt)>();
 
-        foreach (var room in tempGraph.GetNodes())
+        foreach (var room in originalGraph.GetNodes())
         {
-            foreach (var neighbor in tempGraph.GetNeighbors(room))
+            foreach (var neighbor in originalGraph.GetNeighbors(room))
             {
                 if (connectedPairs.Contains((room, neighbor))) continue;
                 if (connectedPairs.Contains((neighbor, room))) continue;
@@ -518,6 +556,21 @@ public class DungeonGenerator2 : MonoBehaviour
                 }
             }
         }
+    }
+
+    public List<RectInt> GetRooms()
+    {
+        return rooms;
+    }
+
+    public List<RectInt> GetDoors()
+    {
+        return doors;
+    }
+
+    public RectInt GetDungeonBounds()
+    {
+        return bigRoom;
     }
 }
 //[CustomEditor(typeof(DungeonGenerator2))]

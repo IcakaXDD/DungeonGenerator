@@ -69,11 +69,14 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ValidateInputTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\MetaAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\_TestScriptableObjectA.cs" />
+    <Compile Include="Assets\Scripts\Dungeon\PlayerController.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\DisableIfTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\InfoBoxAttribute.cs" />
+    <Compile Include="Assets\Scripts\Dungeon\FloorFillSpawner.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ButtonTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ShowNativePropertyTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\InfoBoxTest.cs" />
+    <Compile Include="Assets\Scripts\Dungeon\WallScriptableObject.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\BoxGroupAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\Utility\EColor.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\AllowNestingAttribute.cs" />
@@ -83,6 +86,7 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\Expandable.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\EnumFlagsTest.cs" />
     <Compile Include="Assets\Scripts\DictionaryTest\InventorySystem.cs" />
+    <Compile Include="Assets\Scripts\Dungeon\TileMapGenerator.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\InputAxisAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ExpandableTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\EnableIfTest.cs" />
@@ -93,6 +97,7 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\ResizableTextAreaAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\SortingLayerTest.cs" />
     <Compile Include="Assets\Scripts\DungeonGeneration.cs" />
+    <Compile Include="Assets\Scripts\Extras\ModifyReadWrite.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ShowNonSerializedFieldTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\SceneTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\ValidatorAttributes\ValidatorAttribute.cs" />
@@ -130,6 +135,7 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\TagAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\DropdownAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\DisableIfAttribute.cs" />
+    <Compile Include="Assets\Scripts\Dungeon\MouseClickController.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes\EnumFlagsAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\RequiredTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\ShowAssetPreviewTest.cs" />
@@ -150,6 +156,7 @@
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\ShowIfAttribute.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\FoldoutTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\DrawerAttributes_SpecialCase\ReorderableListAttribute.cs" />
+    <Compile Include="Assets\Scripts\Dungeon\SmoothFollowCamera.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Test\DropdownTest.cs" />
     <Compile Include="Assets\NaughtyAttributes\Scripts\Core\MetaAttributes\OnValueChangedAttribute.cs" />
   </ItemGroup>
