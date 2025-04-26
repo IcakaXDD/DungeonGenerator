@@ -607,9 +607,12 @@ MonoBehaviour:
   intersectLength: 2
   deletePercent: 25
   fastTest: 1
-  makeItAsATree: 0
-  placeAssets: 1
+  makeItAsATree: 1
+  placeAssetsCubes: 0
+  placeAssetsMarchingSquares: 1
   navMesh: {fileID: 1831331801}
+  wallPrefab: {fileID: 2885804948986024595, guid: 33e1a45070ed0f54b9aca06c4070f028, type: 3}
+  floor: {fileID: 1922603358754757540, guid: bf00463096b4c3f478415e2971d873a4, type: 3}
   UseSeed: 1
   seed: dungeon123
   doors: []

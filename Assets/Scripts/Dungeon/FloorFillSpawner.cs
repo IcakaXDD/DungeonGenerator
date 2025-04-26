@@ -57,7 +57,7 @@ public class FloorFillSpawner : MonoBehaviour
     }
     private IEnumerator FloodFillBFS(int startR, int startC, RectInt room)
     {
-        Queue<Vector2Int> queue = new Queue<Vector2Int>();
+        Queue<Vector2Int> queue = new Queue<Vector2Int>(); //if someone ask why vector2Int it is because of the contains method on line 94
         queue.Enqueue(new Vector2Int(startC, startR));
         visited[startR, startC] = true;
         Instantiate(floor, new Vector3(startC + 0.5f, 0, startR + 0.5f), Quaternion.identity, transform);

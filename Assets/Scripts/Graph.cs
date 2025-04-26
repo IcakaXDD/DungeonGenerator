@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
@@ -185,20 +186,13 @@ public class Graph<T>
 
     public Graph<T> BFSTree()
     {
-        Graph<T> tree =new Graph<T>();
+        Graph<T> tree = new Graph<T>();
         HashSet<T> visited = new HashSet<T>();
         Queue<T> queue = new Queue<T>();
+        Dictionary<T, T> parentMap = new Dictionary<T, T>(); // Track parent-child relationships
 
-        T startNode = default;
-
-        foreach (var node in adjacencyList.Keys)
-        {
-            if (adjacencyList.ContainsKey(node))
-            {
-                startNode = node;
-                break;
-            }
-        }
+        T startNode = adjacencyList.Keys.FirstOrDefault();
+        if (startNode == null) return tree;
 
         queue.Enqueue(startNode);
         visited.Add(startNode);
@@ -207,15 +201,19 @@ public class Graph<T>
         while (queue.Count > 0)
         {
             T current = queue.Dequeue();
+
             foreach (T neighbor in adjacencyList[current])
             {
                 if (!visited.Contains(neighbor))
                 {
                     visited.Add(neighbor);
-                   
                     queue.Enqueue(neighbor);
+
+                    tree.AddNode(current);
                     tree.AddNode(neighbor);
-                    tree.AddEdge(current,neighbor);
+                    tree.AddEdge(current, neighbor);
+
+                    parentMap[neighbor] = current;
                 }
             }
         }
@@ -229,9 +227,7 @@ public class Graph<T>
         var visited = new HashSet<T>();
         var parent = new Dictionary<T, T>();
         var queue = new Queue<T>();
-        var edgesToKeep = new HashSet<(T, T)>(); // Stores allowed edges (parent ? child)
-
-        // Start from the first node
+        var edgesToKeep = new HashSet<(T, T)>();
         T startNode = adjacencyList.Keys.First();
         queue.Enqueue(startNode);
         visited.Add(startNode);
@@ -246,7 +242,7 @@ public class Graph<T>
                     visited.Add(neighbor);
                     parent[neighbor] = current;
                     edgesToKeep.Add((current, neighbor)); // Mark as tree edge
-                    edgesToKeep.Add((neighbor, current)); // Undirected graph
+                    edgesToKeep.Add((neighbor, current)); 
                     queue.Enqueue(neighbor);
                 }
             }
@@ -261,11 +257,12 @@ public class Graph<T>
                 if (!edgesToKeep.Contains((node, neighbor)))
                 {
                     edgesToRemove.Add((node, neighbor));
+
                 }
             }
         }
+        Debug.Log(edgesToRemove.Count);
 
-        // Remove non-tree edges
         foreach (var (a, b) in edgesToRemove)
         {
             RemoveEdge(a, b);

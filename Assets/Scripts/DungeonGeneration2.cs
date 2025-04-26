@@ -23,9 +23,15 @@ public class DungeonGenerator2 : MonoBehaviour
 
     public bool makeItAsATree = true;
 
-    public bool placeAssets = false;
+    public bool placeAssetsCubes = false;
+
+    public bool placeAssetsMarchingSquares = false;
 
     public NavMeshSurface navMesh;
+
+    public GameObject wallPrefab;
+
+    public GameObject floor;
 
     [Header("Seed Settings")]
     public bool UseSeed = false;
@@ -40,8 +46,6 @@ public class DungeonGenerator2 : MonoBehaviour
     [SerializeField] Graph<RectInt> backUpGraph;
     public List<RectInt> doors;
     public List<RectInt> rooms;
-    
-
 
     public DebugDrawingBatcher rectIntDrawingBatcher;
     private System.Random seededRandom;
@@ -127,7 +131,7 @@ public class DungeonGenerator2 : MonoBehaviour
         {
             StartCoroutine(VerticalSplit(rooms, bigRoom));
         }
-        StartCoroutine(SplitingFinished());
+        StartCoroutine(StepsToFinish());
     }
     
 
@@ -254,15 +258,7 @@ public class DungeonGenerator2 : MonoBehaviour
         
     }
 
-    private IEnumerator SplitingFinished()
-    {
-        yield return new WaitUntil(() => activeSplittingCoroutines == 0);
-
-        Debug.Log("Splitting finished");
-
-        yield return StartCoroutine(DoorChecker());
-        
-    }
+    
 
     #region Room Checks
     private bool NotBigEnough(RectInt room)
@@ -278,6 +274,41 @@ public class DungeonGenerator2 : MonoBehaviour
 
 
     #endregion
+
+    private IEnumerator StepsToFinish()
+    {
+        yield return new WaitUntil(() => activeSplittingCoroutines == 0);
+
+        Debug.Log("Splitting finished");
+
+        yield return StartCoroutine(DoorChecker());
+
+        yield return StartCoroutine(DeleteSmallRooms());
+
+
+        yield return StartCoroutine(DrawDungeon());
+        yield return StartCoroutine(GraphCreator(true));
+        Debug.Log("Dungeon Finished");
+        if (placeAssetsCubes)
+        {
+            SpawnDungeonAssets();
+            BakeNavMesh();
+        }
+        if (placeAssetsMarchingSquares && !placeAssetsCubes)
+        {
+            Debug.Log("Generating Tile Map");
+            TileMapGenerator.Instance.GenerateTileMap();
+            Debug.Log("Placing wall assets");
+            TileMapGenerator.Instance.GenerateTileMap();
+            Debug.Log("Floor fill");
+            FloorFillSpawner.Instance.FloorFill();
+            yield return new WaitUntil(() => FloorFillSpawner.Instance.floorPlaced == true);
+            BakeNavMesh();
+        }
+
+        yield break;
+
+    }
 
     private IEnumerator DoorChecker()
     {
@@ -297,20 +328,34 @@ public class DungeonGenerator2 : MonoBehaviour
                     if (intersection.width < wMin && intersection.height < hMin) continue;
                     if (intersection.width > intersection.height)
                     {
-                        if(intersectLength+2>intersection.width-(2+intersectLength)) continue;
+                        if (intersectLength + 2 > intersection.width - (2 + intersectLength))
+                        {
+                            RectInt door1 = new RectInt(intersection.x + intersection.width / 2, intersection.y, intersectLength, intersectLength);
+                            yield return new WaitForSeconds(secondsForTest);
+                            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door1, Color.blue, 1f));
+                            doors.Add(door1);
+                            continue;
+                        }
 
                         RectInt door = new RectInt(intersection.x + seededRandom.Next(intersectLength + 2, intersection.width - (2 + intersectLength)), intersection.y, intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
-                        rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
+                        rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1f));
                         doors.Add(door);
                     }
                     else
                     {
-                        if (intersectLength + 2 > intersection.height - (2 + intersectLength)) continue;
+                        if (intersectLength + 2 > intersection.height - (2 + intersectLength))
+                        {
+                            RectInt door1 = new RectInt(intersection.x, intersection.y+intersection.height/2, intersectLength, intersectLength);
+                            yield return new WaitForSeconds(secondsForTest);
+                            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door1, Color.blue, 1f));
+                            doors.Add(door1);
+                            continue;
+                        }
 
                         RectInt door = new RectInt(intersection.x, intersection.y + seededRandom.Next(intersectLength+2, intersection.height - (2 + intersectLength)), intersectLength, intersectLength);
                         yield return new WaitForSeconds(secondsForTest);
-                        rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
+                        rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1f));
 
 
                         doors.Add(door);
@@ -320,32 +365,10 @@ public class DungeonGenerator2 : MonoBehaviour
         }
 
         
-        yield return StartCoroutine(DeleteSmallRooms());
         
-        
-        int check = DrawDungeon();
-        yield return new WaitUntil(() => check == 1);
-        yield return StartCoroutine(GraphCreator(true));
-        Debug.Log("Dungeon Finished");
-        if (placeAssets)
-        {
-            Debug.Log("Generating Tile Map");
-            TileMapGenerator.Instance.GenerateTileMap();
-            Debug.Log("Placing wall assets");
-            TileMapGenerator.Instance.GenerateTileMap();
-            Debug.Log("Floor fill");
-            FloorFillSpawner.Instance.FloorFill();
-            yield return new WaitUntil(() => FloorFillSpawner.Instance.floorPlaced == true);
-            BakeNavMesh();
-        }
-        
-        yield break;
     }
 
-    private void BakeNavMesh()
-    {
-        navMesh.BuildNavMesh();
-    }
+    
 
     private IEnumerator DeleteSmallRooms()
     {
@@ -376,6 +399,12 @@ public class DungeonGenerator2 : MonoBehaviour
             }
 
             originalGraph.RemoveNode(roomToDelete);
+
+            foreach (var door in doorInRoom)
+            {
+                if (!doors.Any(d => AlgorithmsUtils.Intersects(d, door))) 
+                    originalGraph.RemoveNode(door);
+            }
 
             if (originalGraph.IsFullyConnected())
             {
@@ -413,7 +442,7 @@ public class DungeonGenerator2 : MonoBehaviour
             Vector3 roomPosition = new Vector3(rooms[i].center.x, 0, rooms[i].center.y);
             if (stepByStep)
             {
-                DebugExtension.DebugWireSphere(roomPosition, Color.red, 3, 100);
+                DebugExtension.DebugWireSphere(roomPosition, Color.red, 1, 100);
                 yield return new WaitForSeconds(secondsForTest);
             }
             for (int j = 0; j < doors.Count; j++)
@@ -445,15 +474,38 @@ public class DungeonGenerator2 : MonoBehaviour
         }
     }
 
-    private void CheckContainsList(List<RectInt> visited, int i)
+    
+    private IEnumerator MakeTheGraphAsTree()
     {
-        if (!visited.Contains(rooms[i]))
+        yield return StartCoroutine(GraphCreator());
+        originalGraph = originalGraph.BFSTree();
+        HashSet<RectInt> validDoors = new HashSet<RectInt>();
+        List<RectInt> doorsToRemove = new List<RectInt>();
+        foreach (var door in doors)
         {
-            originalGraph.AddNode(rooms[i]);
-            visited.Add(rooms[i]);
+            List<RectInt> connectedRooms = new List<RectInt>();
+            connectedRooms = originalGraph.GetNeighbors(door);
+            if (connectedRooms.Count == 2)
+            {
+                continue;
+            }
+            else
+            {
+                foreach (var room in connectedRooms)
+                {
+                    originalGraph.RemoveEdge(room, door);
+                }
+                doorsToRemove.Add(door);
+            }
+
         }
+        foreach (var door in doorsToRemove)
+        {
+            doors.Remove(door);
+        }
+
+        //PrintAndVisualizeGraph();
     }
- 
 
     private void GraphCreatorWithoutDoors()
     {
@@ -483,80 +535,132 @@ public class DungeonGenerator2 : MonoBehaviour
         }
     }
 
+    private void CheckContainsList(List<RectInt> visited, int i)
+    {
+        if (!visited.Contains(rooms[i]))
+        {
+            originalGraph.AddNode(rooms[i]);
+            visited.Add(rooms[i]);
+        }
+    }
+
     #endregion
 
-    private int DrawDungeon()
+    private IEnumerator DrawDungeon()
     {
         Debug.Log("Redrawing the dungeon");
-        rectIntDrawingBatcher.ClearAllBatches();
-        foreach (var room in rooms)
-        {
-            //yield return new WaitForSeconds(secondsForTest);
-            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(room, Color.green, 100f));
-        }
         if (makeItAsATree)
         {
             //originalGraph.BFSTree2();
-            MakeTheGraphAsTree();
+            yield return StartCoroutine(MakeTheGraphAsTree());
         }
 
-        //vikame da napravi graph bez vrati
-        //graph bfs na tozi samo bez vratite
+        rectIntDrawingBatcher.ClearCalls();
+        Draw();
+        yield return null;
 
-        //if node1 i node2 sa susedi
-        //nachertai vrata
+    }
+
+    private void Draw()
+    {
+        foreach (var room in rooms)
+        {
+            //yield return new WaitForSeconds(secondsForTest);
+            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(room, Color.green, 1f));
+        }
         foreach (var door in doors)
         {
             //yield return new WaitForSeconds(secondsForTest);
-            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1));
+            rectIntDrawingBatcher.BatchCall(() => AlgorithmsUtils.DebugRectInt(door, Color.cyan, 1f));
         }
-        return 1;
-
     }
 
+    
 
-    private void MakeTheGraphAsTree()
+    #region SpawningAssets
+    public void SpawnDungeonAssets()
     {
-        doors.Clear();
-        GraphCreatorWithoutDoors();
-        originalGraph.BFSTree2();
 
-        HashSet<(RectInt, RectInt)> connectedPairs = new HashSet<(RectInt, RectInt)>();
+        GameObject dungeon = new GameObject("Dungeon");
 
-        foreach (var room in originalGraph.GetNodes())
+        foreach (RectInt room in rooms)
         {
-            foreach (var neighbor in originalGraph.GetNeighbors(room))
-            {
-                if (connectedPairs.Contains((room, neighbor))) continue;
-                if (connectedPairs.Contains((neighbor, room))) continue;
-                RectInt intersection = AlgorithmsUtils.Intersect(room, neighbor);
-                if (intersection.width <= 0 || intersection.height <= 0) continue;
+            GameObject roomParent = new GameObject("Room_" + room.x + "_" + room.y);
+            roomParent.transform.SetParent(dungeon.transform);
+            roomParent.transform.position = new Vector3(room.center.x, 0, room.center.y);
+            SpawnWalls(room, roomParent);
+            SpawnFloor(room,roomParent);
+        }
+    }
 
-                if (intersection.width > intersection.height)
-                {
-                    int minX = intersection.x + intersectLength+1;
-                    int maxX = intersection.x + intersection.width - (intersectLength+1);
-                    if (maxX > minX)
-                    {
-                        int doorX = seededRandom.Next(minX, maxX);
-                        doors.Add(new RectInt(doorX, intersection.y, intersectLength, intersectLength));
-                        connectedPairs.Add((room, neighbor));
-                    }
-                }
-                else
-                {
-                    int minY = intersection.y + intersectLength+1;
-                    int maxY = intersection.y + intersection.height - (1+intersectLength);
-                    if (maxY > minY)
-                    {
-                        int doorY = seededRandom.Next(minY, maxY);
-                        doors.Add(new RectInt(intersection.x, doorY, intersectLength, intersectLength));
-                        connectedPairs.Add((room, neighbor));
-                    }
-                }
+    private void SpawnFloor(RectInt room,GameObject parent)
+    {
+        Vector3 floorScale = new Vector3(room.width, room.height, 1);
+        GameObject floorInstance = Instantiate(floor, new Vector3(room.center.x, -0.5f, room.center.y), floor.transform.rotation,parent.transform);
+        floorInstance.transform.localScale = floorScale;
+    }
+
+    public void SpawnWalls(RectInt room,GameObject parent)
+    {
+        GameObject wallParent = new GameObject("Walls");
+        wallParent.transform.SetParent(parent.transform);
+
+        for (int x = room.x; x < room.x + room.width; x++)
+        {
+            // Bottom wall
+            Vector3 bottomPos = new Vector3(x, 0, room.y);
+            TrySpawnWall(wallParent, bottomPos);
+
+            // Top wall
+            Vector3 topPos = new Vector3(x, 0, room.y + room.height - 1);
+            TrySpawnWall(wallParent, topPos);
+        }
+
+        for (int y = room.y; y < room.y + room.height; y++)
+        {
+            // Left wall
+            Vector3 leftPos = new Vector3(room.x, 0, y);
+            TrySpawnWall(wallParent, leftPos);
+           
+            // Right wall
+            Vector3 rightPos = new Vector3(room.x + room.width - 1, 0, y);
+            TrySpawnWall(wallParent, rightPos);
+        }
+    }
+
+    private void TrySpawnWall(GameObject wallParent, Vector3 Pos)
+    {
+        if (CheckForOverlapping(Pos))
+        {
+            if (!IsDoorPosition(Pos))
+            {
+                Instantiate(wallPrefab, Pos, Quaternion.identity, wallParent.transform);
             }
         }
     }
+
+    private bool IsDoorPosition(Vector3 position)
+    {
+        foreach(var door in doors)
+        {
+            bool isInDoorX = position.x >= door.x && position.x < door.x + door.width;
+            bool isInDoorZ = position.z >= door.y && position.z < door.y + door.height;
+
+            if (isInDoorX && isInDoorZ)
+            {
+                return true;
+            }
+        }
+        return false;
+        
+    }
+
+    private bool CheckForOverlapping(Vector3 position)
+    {
+        Collider[] coliider = Physics.OverlapBox(position,new Vector3(0.45f,0.45f,0.45f));
+        return coliider.Length == 0;
+    }
+    #endregion
 
     public List<RectInt> GetRooms()
     {
@@ -572,6 +676,12 @@ public class DungeonGenerator2 : MonoBehaviour
     {
         return bigRoom;
     }
+
+    private void BakeNavMesh()
+    {
+        navMesh.BuildNavMesh();
+    }
+    
 }
 //[CustomEditor(typeof(DungeonGenerator2))]
 //public class DungeonGeneration2Editor : Editor 
