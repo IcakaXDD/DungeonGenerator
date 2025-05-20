@@ -6,6 +6,7 @@ using UnityEngine.Events;
 using System.Collections.Generic;
 using System.Xml.Linq;
 using System.Buffers;
+using System.Collections;
 
 [DefaultExecutionOrder(3)]
 public class TileMapGenerator : MonoBehaviour
@@ -14,8 +15,7 @@ public class TileMapGenerator : MonoBehaviour
     [SerializeField]
     private UnityEvent onGenerateTileMap;
 
-    [SerializeField]
-    DungeonGenerator2 dungeonGenerator;
+    private DungeonGenerator2 dungeonGenerator;
 
     [SerializeField]
     List<WallScriptableObject> prefabs = new List<WallScriptableObject>();
@@ -61,7 +61,7 @@ public class TileMapGenerator : MonoBehaviour
        
         //Fill the map with empty spaces
         GenerateTileValues(tileMap, rooms, doors);
-        SpawnWalls();
+        StartCoroutine(SpawnWalls());
 
         _tileMap = tileMap;
 
@@ -116,9 +116,12 @@ public class TileMapGenerator : MonoBehaviour
         Debug.Log(ToString(true));
     }
 
-    public void SpawnWalls()
+    public IEnumerator SpawnWalls()
     {
-        if (_tileMap == null) return;
+        if (_tileMap == null) yield break;
+
+        int processedPerFrame = 100;
+        int processed = 0;
 
         int rows = _tileMap.GetLength(0);
         int cols = _tileMap.GetLength(1);
@@ -138,12 +141,15 @@ public class TileMapGenerator : MonoBehaviour
 
                 Vector3 position = new Vector3(y+1, 0, x+1);
 
-                if (prefab == null||value==0)
-                {
-                    //Debug.LogWarning($"No prefab found for tile value: {value} at position ({x},{y})");
-                    continue;
-                }
+                if (prefab == null||value==0) continue;
+
                 Instantiate(prefab, position, prefab.gameObject.transform.localRotation,transform);
+                processed++;
+                if (processed >= processedPerFrame&&DungeonGenerator2.Instance.CheckExecutionMode())
+                {
+                    processed = 0;
+                    yield return null;
+                }
             }
         }
     }

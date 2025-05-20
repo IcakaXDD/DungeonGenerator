@@ -50,7 +50,15 @@ public class FloorFillSpawner : MonoBehaviour
         {
             int c = room.xMin + room.width / 2;
             int r = room.yMin + room.height / 2;
-            yield return StartCoroutine(FloodFillBFS(r, c, room));
+            if (DungeonGenerator2.Instance.CheckExecutionMode())
+            {
+                yield return StartCoroutine(FloodFillBFS(r, c, room));
+            }
+            else
+            {
+                StartCoroutine(FloodFillBFS(r,c,room));
+            }
+            
         }
         Debug.Log("Floor placed");
         floorPlaced = true;
@@ -77,13 +85,17 @@ public class FloorFillSpawner : MonoBehaviour
             ProcessTile(r, c - 1, queue, room); // Left
 
             processed++;
-            if (processed >= processedPerFrame)
+            if (processed >= processedPerFrame&& DungeonGenerator2.Instance.CheckExecutionMode())
             {
                 processed = 0; // this is equal to yield return
-                yield return null; //it is like saying to unity after 4*processedPerFrame tiles to take a break to avoid stack overflow
+                yield return null;
+                
+                 //it is like saying to unity after 4*processedPerFrame tiles to take a break to avoid stack overflow
             }
         }
     }
+
+  
 
     private void ProcessTile(int r, int c, Queue<Vector2Int> queue, RectInt room)
     {

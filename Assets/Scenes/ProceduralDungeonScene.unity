@@ -354,8 +354,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.3022674, y: -0.37318102, z: 0.1281391, w: -0.8677274}
-  m_LocalPosition: {x: -5.2056456, y: 7.6336756, z: -7.0175977}
+  m_LocalRotation: {x: 0.4884764, y: 0.5138671, z: -0.48447055, w: 0.51246434}
+  m_LocalPosition: {x: 0, y: 20, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -601,23 +601,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SIZE: 50
-  numberOfRooms: 99999
   wMin: 15
   hMin: 15
   intersectLength: 2
   deletePercent: 25
-  fastTest: 1
-  makeItAsATree: 1
+  secondsForTest: 0.01
+  graphTree: 1
   placeAssetsCubes: 0
   placeAssetsMarchingSquares: 1
+  showAssetsStepByStep: 1
   navMesh: {fileID: 1831331801}
   wallPrefab: {fileID: 2885804948986024595, guid: 33e1a45070ed0f54b9aca06c4070f028, type: 3}
   floor: {fileID: 1922603358754757540, guid: bf00463096b4c3f478415e2971d873a4, type: 3}
+  executionMode: 0
+  skipKey: 32
   UseSeed: 1
   seed: dungeon123
   doors: []
   rooms: []
-  rectIntDrawingBatcher: {fileID: 0}
 --- !u!114 &513822491
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -648,7 +649,6 @@ MonoBehaviour:
   onGenerateTileMap:
     m_PersistentCalls:
       m_Calls: []
-  dungeonGenerator: {fileID: 0}
   prefabs:
   - {fileID: 11400000, guid: 2b5c39f84f48b8344940280046e9bfe8, type: 2}
   - {fileID: 11400000, guid: 6c0474ffbf5370e4098db3c1641a2e61, type: 2}
