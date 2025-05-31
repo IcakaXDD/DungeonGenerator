@@ -8,9 +8,6 @@ using UnityEngine;
 public class Graph<T> 
 {
     private Dictionary<T, List<T>> adjacencyList;
-
-
-
     public Graph()
     {
         adjacencyList = new Dictionary<T, List<T>>();
@@ -89,6 +86,9 @@ public class Graph<T>
             Debug.Log($"{node.Key}: {string.Join(", ", node.Value)}");
         }
     }
+    /// <summary>
+    /// Make a clone of the graph
+    /// </summary>
     public Graph<T> Clone()
     {
         var newGraph = new Graph<T>();
@@ -102,7 +102,9 @@ public class Graph<T>
         }
         return newGraph;
     }
-
+    /// <summary>
+    /// Checks if the graph is fully connected.
+    /// </summary>
     public bool IsFullyConnected()
     { 
         HashSet<T> visited = new HashSet<T>();
@@ -183,7 +185,9 @@ public class Graph<T>
         }
 
     }
-
+    ///<summary>
+    ///A method that generates a graph with no cycles 
+    ///</summary>
     public Graph<T> BFSTree()
     {
         Graph<T> tree = new Graph<T>();
@@ -196,7 +200,7 @@ public class Graph<T>
 
         queue.Enqueue(startNode);
         visited.Add(startNode);
-        tree.AddNode(startNode);
+        //tree.AddNode(startNode);
 
         while (queue.Count > 0)
         {

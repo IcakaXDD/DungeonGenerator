@@ -241,7 +241,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 272397143}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.5
+  m_Radius: 0.1
   m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
@@ -600,25 +600,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb8ad51528661cc4095fc9ef7e5b9562, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SIZE: 50
+  SIZE: 166
   wMin: 15
   hMin: 15
-  intersectLength: 2
   deletePercent: 25
-  secondsForTest: 0.01
-  graphTree: 1
+  secondsForTest: 0.1
+  noRoomLooping: 1
   placeAssetsCubes: 0
   placeAssetsMarchingSquares: 1
-  showAssetsStepByStep: 1
   navMesh: {fileID: 1831331801}
   wallPrefab: {fileID: 2885804948986024595, guid: 33e1a45070ed0f54b9aca06c4070f028, type: 3}
   floor: {fileID: 1922603358754757540, guid: bf00463096b4c3f478415e2971d873a4, type: 3}
+  player: {fileID: 272397149}
   executionMode: 0
+  instantKey: 115
   skipKey: 32
   UseSeed: 1
   seed: dungeon123
   doors: []
   rooms: []
+  skipThisStep: 0
 --- !u!114 &513822491
 MonoBehaviour:
   m_ObjectHideFlags: 0

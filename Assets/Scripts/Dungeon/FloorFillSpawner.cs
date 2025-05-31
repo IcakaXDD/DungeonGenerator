@@ -43,34 +43,35 @@ public class FloorFillSpawner : MonoBehaviour
         StartCoroutine(StartFlooring());
         
     }
-
+    ///<summary>
+    ///Gets the first room of the graph and starts the floor filling
+    ///</summary>
     private IEnumerator StartFlooring()
     {
-        foreach (var room in rooms)
-        {
-            int c = room.xMin + room.width / 2;
-            int r = room.yMin + room.height / 2;
-            if (DungeonGenerator2.Instance.CheckExecutionMode())
-            {
-                yield return StartCoroutine(FloodFillBFS(r, c, room));
-            }
-            else
-            {
-                StartCoroutine(FloodFillBFS(r,c,room));
-            }
-            
-        }
+        Graph<RectInt> graph = DungeonGenerator2.Instance.originalGraph.Clone();
+
+        List<RectInt> rectInts = graph.GetNodes();
+        RectInt startRoom = rectInts[0];
+
+        int startC = startRoom.xMin + startRoom.width / 2;
+        int startR = startRoom.yMin + startRoom.height / 2;
+
+        yield return StartCoroutine(FloorFillBFS(startR, startC, startRoom));
+
         Debug.Log("Floor placed");
         floorPlaced = true;
     }
-    private IEnumerator FloodFillBFS(int startR, int startC, RectInt room)
+    ///<summary>
+    ///Spawning the floor using a BFS approach
+    ///</summary>
+    private IEnumerator FloorFillBFS(int startR, int startC, RectInt room)
     {
-        Queue<Vector2Int> queue = new Queue<Vector2Int>(); //if someone ask why vector2Int it is because of the contains method on line 94
+        Queue<Vector2Int> queue = new Queue<Vector2Int>();
         queue.Enqueue(new Vector2Int(startC, startR));
         visited[startR, startC] = true;
         Instantiate(floor, new Vector3(startC + 0.5f, 0, startR + 0.5f), Quaternion.identity, transform);
 
-        int processedPerFrame = 100; 
+        int processedPerFrame =200; 
         int processed = 0;
 
         while (queue.Count > 0)
@@ -79,13 +80,13 @@ public class FloorFillSpawner : MonoBehaviour
             int r = tile.y;
             int c = tile.x;
 
-            ProcessTile(r + 1, c, queue, room); // Up
-            ProcessTile(r - 1, c, queue, room); // Down
-            ProcessTile(r, c + 1, queue, room); // Right
-            ProcessTile(r, c - 1, queue, room); // Left
+            TrySpawnTile(r + 1, c, queue, room); // Up
+            TrySpawnTile(r - 1, c, queue, room); // Down
+            TrySpawnTile(r, c + 1, queue, room); // Right
+            TrySpawnTile(r, c - 1, queue, room); // Left
 
             processed++;
-            if (processed >= processedPerFrame&& DungeonGenerator2.Instance.CheckExecutionMode())
+            if (processed >= processedPerFrame&& DungeonGenerator2.Instance.CheckExecutionMode()&&!DungeonGenerator2.Instance.skipThisStep)
             {
                 processed = 0; // this is equal to yield return
                 yield return null;
@@ -94,20 +95,17 @@ public class FloorFillSpawner : MonoBehaviour
             }
         }
     }
-
-  
-
-    private void ProcessTile(int r, int c, Queue<Vector2Int> queue, RectInt room)
+    ///<summary>
+    ///Spawning of the tiles
+    ///</summary>
+    private void TrySpawnTile(int r, int c, Queue<Vector2Int> queue, RectInt room)
     {
         if (r < 0 || r >= rows || c < 0 || c >= cols) return;
         if (tileMap[r, c] != 0 || visited[r, c]) return;
 
-        Vector2Int pt = new Vector2Int(c, r);
-        if (!room.Contains(pt)) return;
-
         visited[r, c] = true;
         Instantiate(floor, new Vector3(c + 0.5f, 0, r + 0.5f), Quaternion.identity, transform);
-        queue.Enqueue(pt);
+        queue.Enqueue(new Vector2Int(c, r));
     }
 
     void InitVisited()

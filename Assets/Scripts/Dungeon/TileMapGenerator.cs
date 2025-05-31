@@ -61,7 +61,6 @@ public class TileMapGenerator : MonoBehaviour
        
         //Fill the map with empty spaces
         GenerateTileValues(tileMap, rooms, doors);
-        StartCoroutine(SpawnWalls());
 
         _tileMap = tileMap;
 
@@ -115,7 +114,9 @@ public class TileMapGenerator : MonoBehaviour
     {
         Debug.Log(ToString(true));
     }
-
+    ///<summary>
+    ///Spawning of the walls
+    ///</summary>
     public IEnumerator SpawnWalls()
     {
         if (_tileMap == null) yield break;
@@ -145,7 +146,7 @@ public class TileMapGenerator : MonoBehaviour
 
                 Instantiate(prefab, position, prefab.gameObject.transform.localRotation,transform);
                 processed++;
-                if (processed >= processedPerFrame&&DungeonGenerator2.Instance.CheckExecutionMode())
+                if (processed >= processedPerFrame&&DungeonGenerator2.Instance.CheckExecutionMode()&&!DungeonGenerator2.Instance.skipThisStep)
                 {
                     processed = 0;
                     yield return null;
